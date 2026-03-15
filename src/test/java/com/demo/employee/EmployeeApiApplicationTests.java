@@ -47,17 +47,33 @@ class EmployeeApiApplicationTests {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.firstName").value("John"))
                 .andExpect(jsonPath("$.email").value("john@example.com"))
-                .andExpect(jsonPath("$.status").value("ACTIVE"));
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.createdAt").isNotEmpty());
     }
 
     @Test
-    void shouldGetAllEmployees() throws Exception {
+    void shouldGetAllEmployeesWithPagination() throws Exception {
         createEmployeeInDb("Alice", "Smith", "alice@example.com", "Engineering");
         createEmployeeInDb("Bob", "Jones", "bob@example.com", "Marketing");
 
         mockMvc.perform(get("/api/employees"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)));
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.pageable").exists());
+    }
+
+    @Test
+    void shouldPaginateResults() throws Exception {
+        for (int i = 0; i < 15; i++) {
+            createEmployeeInDb("User" + i, "Last" + i, "user" + i + "@example.com", "Engineering");
+        }
+
+        mockMvc.perform(get("/api/employees").param("page", "0").param("size", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(5)))
+                .andExpect(jsonPath("$.totalElements").value(15))
+                .andExpect(jsonPath("$.totalPages").value(3));
     }
 
     @Test
@@ -66,7 +82,8 @@ class EmployeeApiApplicationTests {
 
         mockMvc.perform(get("/api/employees/" + emp.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.firstName").value("Alice"));
+                .andExpect(jsonPath("$.firstName").value("Alice"))
+                .andExpect(jsonPath("$.createdAt").isNotEmpty());
     }
 
     @Test
@@ -141,6 +158,53 @@ class EmployeeApiApplicationTests {
         mockMvc.perform(get("/api/employees/department/Engineering"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)));
+    }
+
+    @Test
+    void shouldSearchByName() throws Exception {
+        createEmployeeInDb("Alice", "Smith", "alice@example.com", "Engineering");
+        createEmployeeInDb("Bob", "Jones", "bob@example.com", "Marketing");
+
+        mockMvc.perform(get("/api/employees/search").param("name", "alice"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].firstName").value("Alice"));
+    }
+
+    @Test
+    void shouldSearchByDepartmentAndStatus() throws Exception {
+        Employee emp = createEmployeeInDb("Alice", "Smith", "alice@example.com", "Engineering");
+        createEmployeeInDb("Bob", "Jones", "bob@example.com", "Marketing");
+        createEmployeeInDb("Carol", "White", "carol@example.com", "Engineering");
+
+        // Change Alice's status
+        emp.setStatus(EmployeeStatus.ON_LEAVE);
+        repository.save(emp);
+
+        mockMvc.perform(get("/api/employees/search")
+                        .param("department", "Engineering")
+                        .param("status", "ACTIVE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].firstName").value("Carol"));
+    }
+
+    @Test
+    void shouldSearchBySalaryRange() throws Exception {
+        Employee low = createEmployeeInDb("Alice", "Smith", "alice@example.com", "Engineering");
+        low.setSalary(30000.0);
+        repository.save(low);
+
+        Employee high = createEmployeeInDb("Bob", "Jones", "bob@example.com", "Engineering");
+        high.setSalary(90000.0);
+        repository.save(high);
+
+        mockMvc.perform(get("/api/employees/search")
+                        .param("minSalary", "50000")
+                        .param("maxSalary", "100000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].firstName").value("Bob"));
     }
 
     private EmployeeRequest createRequest(String first, String last, String email, String dept) {

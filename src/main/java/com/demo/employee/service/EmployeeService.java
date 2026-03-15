@@ -6,6 +6,11 @@ import com.demo.employee.exception.ResourceNotFoundException;
 import com.demo.employee.model.Employee;
 import com.demo.employee.model.EmployeeStatus;
 import com.demo.employee.repository.EmployeeRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,10 +27,11 @@ public class EmployeeService {
         this.repository = repository;
     }
 
-    public List<Employee> findAll() {
-        return repository.findAll();
+    public Page<Employee> findAll(Pageable pageable) {
+        return repository.findAll(pageable);
     }
 
+    @Cacheable("employees")
     public Employee findById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
@@ -35,7 +41,12 @@ public class EmployeeService {
         return repository.findByDepartment(department);
     }
 
+    public Page<Employee> search(Specification<Employee> spec, Pageable pageable) {
+        return repository.findAll(spec, pageable);
+    }
+
     @Transactional
+    @CacheEvict(value = "employees", allEntries = true)
     public Employee create(EmployeeRequest request) {
         repository.findByEmail(request.getEmail()).ifPresent(e -> {
             throw new DuplicateResourceException("Email already exists: " + request.getEmail());
@@ -48,6 +59,7 @@ public class EmployeeService {
     }
 
     @Transactional
+    @CacheEvict(value = "employees", allEntries = true)
     public Employee update(Long id, EmployeeRequest request) {
         Employee employee = findById(id);
 
@@ -62,6 +74,7 @@ public class EmployeeService {
     }
 
     @Transactional
+    @CacheEvict(value = "employees", allEntries = true)
     public Employee updateStatus(Long id, EmployeeStatus status) {
         Employee employee = findById(id);
         employee.setStatus(status);
@@ -69,6 +82,7 @@ public class EmployeeService {
     }
 
     @Transactional
+    @CacheEvict(value = "employees", allEntries = true)
     public void delete(Long id) {
         Employee employee = findById(id);
         repository.delete(employee);

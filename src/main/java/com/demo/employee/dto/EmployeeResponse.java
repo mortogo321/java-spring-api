@@ -1,55 +1,37 @@
-package com.demo.employee.model;
+package com.demo.employee.dto;
 
-import jakarta.persistence.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import com.demo.employee.model.Employee;
+import com.demo.employee.model.EmployeeStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "employees")
-@EntityListeners(AuditingEntityListener.class)
-public class Employee {
+public class EmployeeResponse {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
     private String firstName;
-
-    @Column(nullable = false)
     private String lastName;
-
-    @Column(nullable = false, unique = true)
     private String email;
-
-    @Column(nullable = false)
     private String department;
-
     private Double salary;
-
     private LocalDate hireDate;
-
-    @Enumerated(EnumType.STRING)
-    private EmployeeStatus status = EmployeeStatus.ACTIVE;
-
-    @CreatedDate
-    @Column(updatable = false)
+    private EmployeeStatus status;
     private LocalDateTime createdAt;
-
-    @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    public Employee() {}
-
-    public Employee(String firstName, String lastName, String email, String department) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.department = department;
+    public static EmployeeResponse fromEntity(Employee e) {
+        EmployeeResponse response = new EmployeeResponse();
+        response.id = e.getId();
+        response.firstName = e.getFirstName();
+        response.lastName = e.getLastName();
+        response.email = e.getEmail();
+        response.department = e.getDepartment();
+        response.salary = e.getSalary();
+        response.hireDate = e.getHireDate();
+        response.status = e.getStatus();
+        response.createdAt = e.getCreatedAt();
+        response.updatedAt = e.getUpdatedAt();
+        return response;
     }
 
     public Long getId() { return id; }
