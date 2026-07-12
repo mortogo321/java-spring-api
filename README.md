@@ -6,9 +6,10 @@ A Spring Boot REST API for managing employee records with full CRUD operations, 
 
 - Java 17
 - Spring Boot 3.2
-- Spring Data JPA
+- Spring Data JPA (with JPA Specifications for dynamic search)
 - H2 In-Memory Database
 - Bean Validation (Jakarta)
+- springdoc-openapi (Swagger UI)
 - Maven
 - Docker + Docker Compose
 
@@ -28,16 +29,17 @@ src/test/java/    # Integration tests (MockMvc)
 
 ## API Endpoints
 
-| Method | Endpoint                             | Description          |
-|--------|--------------------------------------|----------------------|
-| GET    | `/api/employees`                     | Get all employees    |
-| GET    | `/api/employees/{id}`                | Get by ID            |
-| GET    | `/api/employees/department/{dept}`   | Get by department    |
-| GET    | `/api/employees/stats/departments`   | Department stats     |
-| POST   | `/api/employees`                     | Create employee      |
-| PUT    | `/api/employees/{id}`                | Update employee      |
-| PATCH  | `/api/employees/{id}/status?status=X`| Update status        |
-| DELETE | `/api/employees/{id}`                | Delete employee      |
+| Method | Endpoint                             | Description                   |
+|--------|--------------------------------------|--------------------------------|
+| GET    | `/api/employees`                     | Get all employees (paginated) |
+| GET    | `/api/employees/{id}`                | Get by ID                     |
+| GET    | `/api/employees/department/{dept}`   | Get by department             |
+| GET    | `/api/employees/search`              | Search by name/department/status/salary range (paginated) |
+| GET    | `/api/employees/stats/departments`   | Department stats              |
+| POST   | `/api/employees`                     | Create employee                |
+| PUT    | `/api/employees/{id}`                | Update employee                |
+| PATCH  | `/api/employees/{id}/status?status=X`| Update status                   |
+| DELETE | `/api/employees/{id}`                | Delete employee                |
 
 ### Employee Fields
 
@@ -59,7 +61,7 @@ src/test/java/    # Integration tests (MockMvc)
 ./mvnw spring-boot:run
 ```
 
-The application starts on `http://localhost:8080`.
+The application starts on `http://localhost:8080`. Swagger UI is available at `http://localhost:8080/swagger-ui.html`.
 
 ### Docker
 
